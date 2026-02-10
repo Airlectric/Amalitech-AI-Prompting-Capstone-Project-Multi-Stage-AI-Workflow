@@ -1,4 +1,4 @@
-import google.generativeai as genai
+import google.genai as genai
 import json
 import os
 from dotenv import load_dotenv
@@ -20,8 +20,7 @@ def analyze_data(profile_json):
     if not api_key:
         raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
     
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    client = genai.Client(api_key=api_key)
     
     prompt = f"""You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
 
@@ -54,7 +53,10 @@ Here is the data profile:
 {json.dumps(profile_json)}
 """
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-exp",
+        contents=prompt
+    )
     json_text = extract_json_from_response(response)
     return json.loads(json_text)
 
@@ -63,8 +65,7 @@ def narrate_results(analysis_results):
     if not api_key:
         raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
     
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    client = genai.Client(api_key=api_key)
     
     prompt = f"""You are a senior data analyst writing a report for stakeholders.
 
@@ -86,7 +87,10 @@ Here are the analysis results:
 {json.dumps(analysis_results)}
 """
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-exp",
+        contents=prompt
+    )
     json_text = extract_json_from_response(response)
     return json.loads(json_text)
 
