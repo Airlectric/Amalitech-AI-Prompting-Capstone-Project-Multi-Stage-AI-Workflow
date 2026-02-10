@@ -16,12 +16,12 @@ def extract_json_from_response(response):
     return text.strip()
 
 def analyze_data(profile_json):
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY not found in .env file")
+        raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
     
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
+    model = genai.GenerativeModel("gemini-1.5-pro")
     
     prompt = f"""You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
 
@@ -59,12 +59,12 @@ Here is the data profile:
     return json.loads(json_text)
 
 def narrate_results(analysis_results):
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY not found in .env file")
+        raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
     
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
+    model = genai.GenerativeModel("gemini-1.5-pro")
     
     prompt = f"""You are a senior data analyst writing a report for stakeholders.
 
