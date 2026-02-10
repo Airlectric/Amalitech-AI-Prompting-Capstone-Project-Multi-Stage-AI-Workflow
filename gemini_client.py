@@ -1,4 +1,4 @@
-import google.generativeai as genai
+import google.genai as genai
 import json
 import os
 from dotenv import load_dotenv
@@ -16,12 +16,13 @@ def extract_json_from_response(response):
     return text.strip()
 
 def analyze_data(profile_json):
-    api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
+        api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
     
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    client = genai.Client(api_key=api_key)
     
     prompt = f"""You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
 
@@ -54,17 +55,21 @@ Here is the data profile:
 {json.dumps(profile_json)}
 """
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+    )
     json_text = extract_json_from_response(response)
     return json.loads(json_text)
 
 def narrate_results(analysis_results):
-    api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
+        api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
     
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    client = genai.Client(api_key=api_key)
     
     prompt = f"""You are a senior data analyst writing a report for stakeholders.
 
@@ -86,7 +91,10 @@ Here are the analysis results:
 {json.dumps(analysis_results)}
 """
     
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+    )
     json_text = extract_json_from_response(response)
     return json.loads(json_text)
 
