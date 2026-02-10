@@ -56,7 +56,7 @@ Here is the data profile:
 """
     
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=prompt
     )
     json_text = extract_json_from_response(response)
@@ -92,7 +92,7 @@ Here are the analysis results:
 """
     
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=prompt
     )
     json_text = extract_json_from_response(response)
