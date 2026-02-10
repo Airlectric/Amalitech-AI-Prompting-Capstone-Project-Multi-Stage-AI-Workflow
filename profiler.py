@@ -1,6 +1,21 @@
 import pandas as pd
 import json
 from pathlib import Path
+import numpy as np
+
+def convert_to_native(obj):
+    if isinstance(obj, dict):
+        return {k: convert_to_native(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_native(i) for i in obj]
+    elif isinstance(obj, (np.integer,)):
+        return int(obj)
+    elif isinstance(obj, (np.floating,)):
+        return float(obj)
+    elif isinstance(obj, (np.ndarray,)):
+        return obj.tolist()
+    else:
+        return obj
 
 def identify_category(series):
     dtype = str(series.dtype)
@@ -14,11 +29,13 @@ def identify_category(series):
     return "categorical"
 
 def get_numeric_stats(series):
+    if series.empty:
+        return {"mean": None, "min": None, "max": None, "std": None}
     return {
-        "mean": round(series.mean(), 2) if not series.empty else None,
-        "min": round(series.min(), 2) if not series.empty else None,
-        "max": round(series.max(), 2) if not series.empty else None,
-        "std": round(series.std(), 2) if not series.empty else None
+        "mean": float(round(series.mean(), 2)),
+        "min": float(round(series.min(), 2)),
+        "max": float(round(series.max(), 2)),
+        "std": float(round(series.std(), 2))
     }
 
 def profile_csv(csv_path):
@@ -32,7 +49,7 @@ def profile_csv(csv_path):
         "row_count": len(df),
         "column_count": len(df.columns),
         "columns": [],
-        "sample_rows": df.head(5).to_dict(orient="records")
+        "sample_rows": convert_to_native(df.head(5).to_dict(orient="records"))
     }
     
     for col in df.columns:
@@ -49,8 +66,9 @@ def profile_csv(csv_path):
         if category == "numeric":
             col_info["stats"] = get_numeric_stats(series)
         elif category == "categorical":
-            col_info["unique_values"] = list(series.dropna().unique()[:20])
-            col_info["value_counts"] = series.value_counts().head(10).to_dict()
+            col_info["unique_values"] = [str(v) for v in series.dropna().unique()[:20]]
+            vc = series.value_counts().head(10).to_dict()
+            col_info["value_counts"] = {str(k): int(v) for k, v in vc.items()}
         
         profile["columns"].append(col_info)
     
