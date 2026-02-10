@@ -59,3 +59,12 @@ project/
 - **Gemini API** - Data analysis planning and report narration
 - **Groq API (Llama 3.3)** - Python code generation
 - **Pandas/Matplotlib/Seaborn** - Data processing and visualization
+
+## Documentation
+
+- [Workflow Diagram](docs/workflow-diagram.md) - Visual representation of the pipeline
+- [Full Documentation](docs/documentation.md) - Detailed explanation of all stages and prompts
+
+## License
+
+MIT License
