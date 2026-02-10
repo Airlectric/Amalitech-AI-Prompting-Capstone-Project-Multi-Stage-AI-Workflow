@@ -16,9 +16,11 @@ def extract_json_from_response(response):
     return text.strip()
 
 def analyze_data(profile_json):
-    api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
+        api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
     
     client = genai.Client(api_key=api_key)
     
@@ -54,16 +56,18 @@ Here is the data profile:
 """
     
     response = client.models.generate_content(
-        model="gemini-2.0-flash-exp",
+        model="gemini-2.0-flash",
         contents=prompt
     )
     json_text = extract_json_from_response(response)
     return json.loads(json_text)
 
 def narrate_results(analysis_results):
-    api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_GEMINI_API_KEY not found in .env file")
+        api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
     
     client = genai.Client(api_key=api_key)
     
@@ -88,7 +92,7 @@ Here are the analysis results:
 """
     
     response = client.models.generate_content(
-        model="gemini-2.0-flash-exp",
+        model="gemini-2.0-flash",
         contents=prompt
     )
     json_text = extract_json_from_response(response)
