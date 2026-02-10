@@ -31,8 +31,7 @@ def run_analysis(code_string, csv_path):
             [sys.executable, str(ANALYSIS_SCRIPT), csv_path],
             capture_output=True,
             text=True,
-            timeout=60,
-            cwd=str(OUTPUT_DIR)
+            timeout=60
         )
         
         result["stdout"] = process.stdout

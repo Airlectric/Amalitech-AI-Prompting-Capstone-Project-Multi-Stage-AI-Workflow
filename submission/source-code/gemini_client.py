@@ -21,10 +21,10 @@ def analyze_data(profile_json):
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
-    
+
     client = genai.Client(api_key=api_key)
-    
-    prompt = f"""You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
+
+    prompt = """You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
 
 Your job:
 1. Identify what this dataset represents (domain, purpose)
@@ -37,26 +37,25 @@ Your job:
 4. Identify any data cleaning steps needed (handle missing values, outliers, type conversions)
 
 Return your response as ONLY valid JSON with this structure:
-{{
+{
   "dataset_description": "string",
   "cleaning_steps": ["step1", "step2"],
   "analyses": [
-    {{
+    {
       "question": "string",
       "columns": ["col1", "col2"],
       "analysis_type": "string",
       "chart_type": "string",
       "insight_hint": "string"
-    }}
+    }
   ]
-}}
+}
 
 Here is the data profile:
-{json.dumps(profile_json)}
-"""
-    
+""" + json.dumps(profile_json)
+
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=prompt
     )
     json_text = extract_json_from_response(response)
@@ -68,10 +67,10 @@ def narrate_results(analysis_results):
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
-    
+
     client = genai.Client(api_key=api_key)
-    
-    prompt = f"""You are a senior data analyst writing a report for stakeholders.
+
+    prompt = """You are a senior data analyst writing a report for stakeholders.
 
 I will give you the raw results of a data analysis (statistical findings, chart descriptions, detected patterns).
 
@@ -81,18 +80,17 @@ Write:
 3. Recommendations (2-3 actionable next steps based on the data)
 
 Return your response as ONLY valid JSON:
-{{
+{
   "executive_summary": "string",
   "key_findings": ["finding1", "finding2"],
   "recommendations": ["rec1", "rec2"]
-}}
+}
 
 Here are the analysis results:
-{json.dumps(analysis_results)}
-"""
-    
+""" + json.dumps(analysis_results)
+
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=prompt
     )
     json_text = extract_json_from_response(response)
@@ -101,11 +99,11 @@ Here are the analysis results:
 if __name__ == "__main__":
     import sys
     from profiler import profile_csv
-    
+
     if len(sys.argv) < 2:
         print("Usage: python gemini_client.py <csv_file>")
         sys.exit(1)
-    
+
     profile = profile_csv(sys.argv[1])
     print("Testing analyze_data...")
     plan = analyze_data(profile)
