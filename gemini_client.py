@@ -40,11 +40,16 @@ Your job:
    - For each column with null values, specify: "Drop rows with null in [column_name]" OR "Fill null in [column_name] with [value/mode/median/mean]"
    - For numeric columns: use mean, median, or a specific value
    - For categorical columns: use mode or "Unknown"
-   - For columns with string patterns (like duration "2h 30m" or stops "2 stops"), handle edge cases like "non-stop" or empty strings
+   - For columns with string patterns (like duration "2h 30m", "30m", "5h" or stops "2 stops"), handle ALL edge cases:
+     * Duration formats: "2h 30m", "30m", "5h", "", NaN
+     * Stops formats: "non-stop", "1 stop", "2 stops", NaN
+   - ALWAYS specify a robust parsing function that handles all formats, NOT simple split operations
    - NEVER use operations that assume non-null values (like .split()) without first handling nulls and edge cases
    - Add a check: if converting strings to numeric, handle parsing errors with try-except or pd.to_numeric with errors='coerce'
 
 IMPORTANT: If any column has null values, you MUST include explicit null-handling steps in cleaning_steps before any other operations.
+
+For Duration columns, specify: "Convert Duration to minutes using a robust parsing function that handles 'Xh Ym', 'Ym', 'Xh', and empty values"
 
 Return your response as ONLY valid JSON with this structure:
 {
