@@ -139,37 +139,5 @@ Implementation details:
 ### Prompt 16: Update Prompt Logs
 Update docs/prompt-logs.md to include all new prompts for enhanced Streamlit features.
 
----
-
-### Prompt 17: Handle Gemini API Rate Limiting
-The Gemini API free tier has a limit of 20 requests per minute. Implement fixes:
-
-1. **Add Rate Limiting**: 
-   - Add global LAST_API_CALL_TIME tracker
-   - Implement rate_limit() function with 3-second cooldown between API calls
-   - Use time.sleep() to enforce minimum delay between requests
-
-2. **Add Retry Logic with Exponential Backoff**:
-   - Create max_retries parameter (default 3 retries)
-   - Implement fallback to different models when quota exceeded:
-     - Primary: gemini-2.5-flash
-     - Fallback 1: gemini-1.5-flash
-     - Fallback 2: gemini-1.5-pro
-   - Extract wait time from error message (e.g., "retry in 56.6s")
-   - Add 5-second buffer to recommended wait time
-   - Try each model sequentially before retrying
-
-3. **Update Function Signatures**:
-   - analyze_data(profile_json, max_retries=3)
-   - narrate_results(analysis_results, max_retries=3)
-
-4. **Error Handling**:
-   - Catch RESOURCE_EXHAUSTED (429) errors
-   - Parse error message for retry delay
-   - Raise ValueError with clear message after all retries exhausted
-   - Continue to next model if one fails due to quota
-
-
-
 
 

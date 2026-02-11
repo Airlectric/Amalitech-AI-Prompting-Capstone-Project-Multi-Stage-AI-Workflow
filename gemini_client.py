@@ -1,14 +1,9 @@
 import google.genai as genai
 import json
 import os
-import time
 from dotenv import load_dotenv
 
 load_dotenv()
-
-API_COOLDOWN_SECONDS = 3
-
-LAST_API_CALL_TIME = 0
 
 def extract_json_from_response(response):
     text = response.text.strip()
@@ -20,31 +15,16 @@ def extract_json_from_response(response):
         text = text[:-3]
     return text.strip()
 
-def rate_limit():
-    global LAST_API_CALL_TIME
-    elapsed = time.time() - LAST_API_CALL_TIME
-    if elapsed < API_COOLDOWN_SECONDS:
-        time.sleep(API_COOLDOWN_SECONDS - elapsed)
-    LAST_API_CALL_TIME = time.time()
-
-def analyze_data(profile_json, max_retries=3):
+def analyze_data(profile_json):
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
 
-    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-    last_error = None
-    
-    for attempt in range(max_retries):
-        for model in models_to_try:
-            try:
-                rate_limit()
-                
-                client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
-                prompt = """You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
+    prompt = """You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
 
 Your job:
 1. Identify what this dataset represents (domain, purpose)
@@ -82,56 +62,23 @@ Return your response as ONLY valid JSON with this structure:
 Here is the data profile:
 """ + json.dumps(profile_json)
 
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt
-                )
-                json_text = extract_json_from_response(response)
-                return json.loads(json_text)
-                
-            except Exception as e:
-                error_str = str(e)
-                last_error = e
-                
-                if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
-                    wait_time = 60
-                    if "retry in" in error_str.lower():
-                        try:
-                            import re
-                            match = re.search(r'retry in ([\d.]+)s', error_str.lower())
-                            if match:
-                                wait_time = float(match.group(1)) + 5
-                        except:
-                            pass
-                    
-                    if attempt < max_retries - 1:
-                        time.sleep(wait_time)
-                        continue
-                break
-        
-        if attempt < max_retries - 1:
-            time.sleep(60)
-    
-    raise ValueError(f"Failed after {max_retries} retries. Last error: {str(last_error)}")
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    json_text = extract_json_from_response(response)
+    return json.loads(json_text)
 
-def narrate_results(analysis_results, max_retries=3):
+def narrate_results(analysis_results):
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
 
-    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-    last_error = None
-    
-    for attempt in range(max_retries):
-        for model in models_to_try:
-            try:
-                rate_limit()
-                
-                client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
-                prompt = """You are a senior data analyst writing a report for stakeholders.
+    prompt = """You are a senior data analyst writing a report for stakeholders.
 
 I will give you the raw results of a data analysis (statistical findings, chart descriptions, detected patterns).
 
@@ -150,37 +97,12 @@ Return your response as ONLY valid JSON:
 Here are the analysis results:
 """ + json.dumps(analysis_results)
 
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt
-                )
-                json_text = extract_json_from_response(response)
-                return json.loads(json_text)
-                
-            except Exception as e:
-                error_str = str(e)
-                last_error = e
-                
-                if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
-                    wait_time = 60
-                    if "retry in" in error_str.lower():
-                        try:
-                            import re
-                            match = re.search(r'retry in ([\d.]+)s', error_str.lower())
-                            if match:
-                                wait_time = float(match.group(1)) + 5
-                        except:
-                            pass
-                    
-                    if attempt < max_retries - 1:
-                        time.sleep(wait_time)
-                        continue
-                break
-        
-        if attempt < max_retries - 1:
-            time.sleep(60)
-    
-    raise ValueError(f"Failed after {max_retries} retries. Last error: {str(last_error)}")
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    json_text = extract_json_from_response(response)
+    return json.loads(json_text)
 
 if __name__ == "__main__":
     import sys
