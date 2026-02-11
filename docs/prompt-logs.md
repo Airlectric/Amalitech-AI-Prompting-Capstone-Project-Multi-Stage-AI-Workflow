@@ -104,18 +104,40 @@ Run the pipeline with sample_data/Flight_Price_Dataset_of_Bangladesh.csv and ver
 - AI-generated code executes without errors
 - Report generates successfully with 64 charts
 
+---
 
+### Prompt 14: Create Streamlit Frontend
+Create a Streamlit frontend (app.py) with:
+- File upload for .csv, .xlsx, .parquet, .json formats
+- Dataset validation for all supported formats
+- Pipeline integration with progress display
+- HTML report display in embedded viewer
+- Download options for HTML, PDF, and Markdown formats
+- Update requirements.txt with new dependencies
 
-### Including frontend to streamline the process
-A frontend must be created in streamlit to allow users to upload the .csv,.xlsx, .paquet data and other valid data formats
-- first there should be dataset validation for both .csv and .xlsx and the other data formats
-- next after processing is done the report should be displayed and the user should be allowed to download the report
-- for downloading the report the format should be converted to .pdf or .md depending on the users choice
+---
 
-### Deployment on streamlit server
-The Application will be deployed on the streamlit server, hence:
-- Prepare the system for deployment
-- 
+### Prompt 15: Add Enhanced Streamlit Features
+Enhance the Streamlit app with:
+1. **Auto Cleanup**: Clear generated files after 30 minutes of inactivity using a background thread
+2. **Sample Datasets**: Add sidebar option to test with existing datasets (employees.csv, Flight_Price_Dataset_of_Bangladesh.csv)
+3. **Complete Package Download**: Add option to download report + all visualizations as a ZIP file containing:
+   - HTML report
+   - All generated PNG charts in a charts/ subfolder
+4. **Manual Cleanup Button**: Add "Done - Clear Generated Files" button after analysis completion
+
+Implementation details:
+- Use threading.Timer or background thread for 30-min cleanup
+- Create SESSION_DIR for session-based file management
+- Implement create_zip_package() function using zipfile module
+- Add cleanup_current_session() function for manual cleanup
+- Create two tabs in download section: "Report Only" and "Complete Package"
+- Add get_sample_datasets() function to discover available sample data
+
+---
+
+### Prompt 16: Update Prompt Logs
+Update docs/prompt-logs.md to include all new prompts for enhanced Streamlit features.
 
 
 
