@@ -132,7 +132,7 @@ def analyze_data_with_cerebras(profile_json):
     try:
         from cerebras.cloud.sdk import Cerebras
     except ImportError:
-        raise ValueError("cerebras-cloud-sdk not installed. Run: pip install cerebras-cloud-sdk")
+        raise ValueError("cerebras-cloud-sdk not found. Make sure you're using the venv Python: 'venv\\Scripts\\python.exe -m streamlit run app.py'")
     
     api_key = os.getenv("CEREBRAS_API_KEY")
     if not api_key:
@@ -357,7 +357,7 @@ def narrate_results_with_cerebras(analysis_results):
     try:
         from cerebras.cloud.sdk import Cerebras
     except ImportError:
-        raise ValueError("cerebras-cloud-sdk not installed. Run: pip install cerebras-cloud-sdk")
+        raise ValueError("cerebras-cloud-sdk not found. Make sure you're using the venv Python: 'venv\\Scripts\\python.exe -m streamlit run app.py'")
     
     api_key = os.getenv("CEREBRAS_API_KEY")
     if not api_key:
