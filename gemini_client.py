@@ -259,6 +259,9 @@ def analyze_data(profile_json):
     for api_name, api_func in apis:
         try:
             return api_func(profile_json)
+        except ImportError as e:
+            last_error = e
+            continue
         except Exception as e:
             error_str = str(e)
             last_error = e
@@ -468,6 +471,9 @@ def narrate_results(analysis_results):
     for api_name, api_func in apis:
         try:
             return api_func(analysis_results)
+        except ImportError as e:
+            last_error = e
+            continue
         except Exception as e:
             error_str = str(e)
             last_error = e
