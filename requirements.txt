@@ -10,3 +10,5 @@ openpyxl
 pyarrow
 html2text
 weasyprint
+cerebras-cloud-sdk
+
