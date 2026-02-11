@@ -34,7 +34,15 @@ Your job:
    - The type of analysis (correlation, distribution, comparison, trend, anomaly detection)
    - The best chart type (bar, scatter, histogram, box, heatmap, line, violin, pie)
    - A short description of what insight to look for
-4. Identify any data cleaning steps needed (handle missing values, outliers, type conversions)
+4. Identify data cleaning steps needed with SPECIFIC handling for null values and edge cases:
+   - For each column with null values, specify: "Drop rows with null in [column_name]" OR "Fill null in [column_name] with [value/mode/median/mean]"
+   - For numeric columns: use mean, median, or a specific value
+   - For categorical columns: use mode or "Unknown"
+   - For columns with string patterns (like duration "2h 30m" or stops "2 stops"), handle edge cases like "non-stop" or empty strings
+   - NEVER use operations that assume non-null values (like .split()) without first handling nulls and edge cases
+   - Add a check: if converting strings to numeric, handle parsing errors with try-except or pd.to_numeric with errors='coerce'
+
+IMPORTANT: If any column has null values, you MUST include explicit null-handling steps in cleaning_steps before any other operations.
 
 Return your response as ONLY valid JSON with this structure:
 {
