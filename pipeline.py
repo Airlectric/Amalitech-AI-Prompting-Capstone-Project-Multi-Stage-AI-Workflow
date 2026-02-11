@@ -61,7 +61,7 @@ def main():
         print_stage(2, "AI generating analysis code (Groq/Llama)...")
         code_string = generate_code(data_profile, analysis_plan)
         print(f"  -> Generated {len(code_string.splitlines())} lines of Python code\n")
-        with open("output/stage2_analysis_script.py", "w") as f:
+        with open("output/stage2_analysis_script.py", "w", encoding="utf-8") as f:
             f.write(code_string)
         
         time.sleep(2)

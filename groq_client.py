@@ -42,6 +42,14 @@ RULES:
 - Handle errors gracefully
 - Close each figure after saving to avoid memory issues
 
+CRITICAL NULL HANDLING - USE EXACT SYNTAX:
+- ALWAYS handle null values BEFORE applying any string operations (like .split())
+- For numeric columns with nulls: use df.loc[:, 'column_name'] = df['column_name'].fillna(df['column_name'].median())
+- For categorical columns with nulls: use df.loc[:, 'column_name'] = df['column_name'].fillna("Unknown")
+- IMPORTANT: Use df.loc[:, 'col'] = df['col'].fillna(value) NOT df['col'].fillna(value, inplace=True)
+- Handle NaN values in string columns BEFORE calling .split() - check for NaN and replace with a default value first using the correct syntax above
+- Check for nulls using df.isnull().sum() and handle them explicitly
+
 DATA SCHEMA:
 {json.dumps(data_profile, indent=2)}
 
