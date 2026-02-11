@@ -54,7 +54,33 @@ CRITICAL DATA TYPE HANDLING - USE EXACT SYNTAX:
    - First convert to datetime: df['column_name'] = pd.to_datetime(df['column_name'], format='mixed', dayfirst=True)
    - This automatically updates the column in place without needing loc
 4. For string operations like .split(), ALWAYS handle NaN first using fillna
-5. Always verify column types after conversion using df.dtypes
+5. For Duration parsing (e.g., "2h 30m", "30m", "5h"):
+   - First fill NaN: df['Duration'] = df['Duration'].fillna('0m')
+   - Use a robust function that handles all formats:
+     def parse_duration(d):
+         d = str(d).strip()
+         hours = 0
+         minutes = 0
+         if 'h' in d:
+             parts = d.split('h')
+             if parts[0].strip():
+                 try:
+                     hours = int(parts[0].strip())
+                 except:
+                     hours = 0
+             if len(parts) > 1 and 'm' in parts[1]:
+                 try:
+                     minutes = int(parts[1].split('m')[0].strip())
+                 except:
+                     minutes = 0
+         elif 'm' in d:
+             try:
+                 minutes = int(d.split('m')[0].strip())
+             except:
+                 minutes = 0
+         return hours * 60 + minutes
+   - Apply: df['Duration_Minutes'] = df['Duration'].apply(parse_duration)
+6. Always verify column types after conversion using df.dtypes
 
 DATA SCHEMA:
 {json.dumps(data_profile, indent=2)}
