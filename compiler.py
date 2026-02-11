@@ -26,6 +26,8 @@ def build_report(narrative, chart_paths, profile):
         "filename": profile.get("filename", "Unknown"),
         "row_count": profile.get("row_count", 0),
         "column_count": profile.get("column_count", 0),
+        "total_null_values": profile.get("total_null_values", 0),
+        "columns": profile.get("columns", []),
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "executive_summary": narrative.get("executive_summary", "No summary available."),
         "key_findings": narrative.get("key_findings", []),

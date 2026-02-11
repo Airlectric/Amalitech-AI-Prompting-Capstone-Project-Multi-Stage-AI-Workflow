@@ -69,6 +69,124 @@
             margin-bottom: 20px;
             font-size: 1.5em;
         }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+        .stats-table th, .stats-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .stats-table th {
+            background-color: #1e3c72;
+            color: white;
+            font-weight: 600;
+        }
+        .stats-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .stats-table tr:hover {
+            background-color: #e8f4fd;
+        }
+        .stats-table .stat-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .stats-table .stat-value {
+            color: #1e3c72;
+            font-weight: 500;
+        }
+        .column-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1e3c72;
+        }
+        .column-name {
+            font-size: 1.3em;
+            color: #1e3c72;
+            font-weight: 600;
+        }
+        .column-type {
+            background-color: #e8f4fd;
+            color: #1e3c72;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        .numeric-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .stats-category {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .stats-category h4 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 1em;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .null-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+        }
+        .value-distribution {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .distribution-bar {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .distribution-label {
+            width: 120px;
+            font-size: 0.85em;
+            color: #555;
+        }
+        .distribution-track {
+            flex: 1;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .distribution-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 10px;
+        }
+        .distribution-value {
+            width: 60px;
+            text-align: right;
+            font-size: 0.85em;
+            color: #1e3c72;
+            font-weight: 500;
+        }
         .executive-summary {
             background-color: #e8f4fd;
             border-left: 4px solid #1e3c72;
@@ -171,6 +289,184 @@
         <div class="section executive-summary">
             <h2>Executive Summary</h2>
             <p>{{ executive_summary }}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Data Profile</h2>
+            <div class="metadata" style="margin-bottom: 20px;">
+                <div class="metadata-item">
+                    <div class="metadata-label">Total Rows</div>
+                    <div class="metadata-value">{{ row_count }}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Total Columns</div>
+                    <div class="metadata-value">{{ column_count }}</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Total Null Values</div>
+                    <div class="metadata-value">{{ total_null_values }}</div>
+                </div>
+            </div>
+            
+            {% for col in columns %}
+            <div class="column-section">
+                <div class="column-header">
+                    <span class="column-name">{{ col.name }}</span>
+                    <span class="column-type">{{ col.category }}</span>
+                </div>
+                
+                {% if col.category == 'numeric' %}
+                {% set stats = col.stats %}
+                {% if stats.null_count > 0 %}
+                <div class="null-warning">
+                    ⚠️ This column contains {{ stats.null_count }} null values ({{ stats.null_percentage }}%)
+                </div>
+                {% endif %}
+                
+                <div class="numeric-stats-grid">
+                    <div class="stats-category">
+                        <h4>Central Tendency</h4>
+                        <table class="stats-table">
+                            <tr>
+                                <td class="stat-label">Count</td>
+                                <td class="stat-value">{{ stats.count }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Mean</td>
+                                <td class="stat-value">{{ stats.mean }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Median</td>
+                                <td class="stat-value">{{ stats.median }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Mode</td>
+                                <td class="stat-value">{{ stats.mode }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="stats-category">
+                        <h4>Dispersion</h4>
+                        <table class="stats-table">
+                            <tr>
+                                <td class="stat-label">Min</td>
+                                <td class="stat-value">{{ stats.min }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Max</td>
+                                <td class="stat-value">{{ stats.max }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Range</td>
+                                <td class="stat-value">{{ stats.range }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Variance</td>
+                                <td class="stat-value">{{ stats.variance }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Std Deviation</td>
+                                <td class="stat-value">{{ stats.std }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Coeff. of Variation (%)</td>
+                                <td class="stat-value">{{ stats.coefficient_of_variation }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="stats-category">
+                        <h4>Shape</h4>
+                        <table class="stats-table">
+                            <tr>
+                                <td class="stat-label">Skewness</td>
+                                <td class="stat-value">{{ stats.skewness }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Kurtosis</td>
+                                <td class="stat-value">{{ stats.kurtosis }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="stats-category">
+                        <h4>Percentiles</h4>
+                        <table class="stats-table">
+                            <tr>
+                                <td class="stat-label">25th Percentile (Q1)</td>
+                                <td class="stat-value">{{ stats.percentile_25 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">50th Percentile (Median)</td>
+                                <td class="stat-value">{{ stats.percentile_50 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">75th Percentile (Q3)</td>
+                                <td class="stat-value">{{ stats.percentile_75 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">IQR (Interquartile Range)</td>
+                                <td class="stat-value">{{ stats.iqr }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% else %}
+                {% set stats = col.stats %}
+                {% if stats.null_count > 0 %}
+                <div class="null-warning">
+                    ⚠️ This column contains {{ stats.null_count }} null values ({{ stats.null_percentage }}%)
+                </div>
+                {% endif %}
+                
+                <div class="numeric-stats-grid">
+                    <div class="stats-category">
+                        <h4>Basic Information</h4>
+                        <table class="stats-table">
+                            <tr>
+                                <td class="stat-label">Data Type</td>
+                                <td class="stat-value">{{ col.dtype }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Non-Null Count</td>
+                                <td class="stat-value">{{ stats.count }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Unique Values</td>
+                                <td class="stat-value">{{ stats.unique_count }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Most Common (Mode)</td>
+                                <td class="stat-value">{{ stats.mode }}</td>
+                            </tr>
+                            <tr>
+                                <td class="stat-label">Mode Frequency</td>
+                                <td class="stat-value">{{ stats.mode_frequency }} ({{ stats.mode_percentage }}%)</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="stats-category">
+                        <h4>Value Distribution</h4>
+                        <div class="value-distribution">
+                            {% for value, count in stats.value_counts.items() %}
+                            {% set percentage = (count / stats.count * 100)|round(1) %}
+                            <div class="distribution-bar">
+                                <span class="distribution-label">{{ value }}</span>
+                                <div class="distribution-track">
+                                    <div class="distribution-fill" style="width: {{ percentage }}%"></div>
+                                </div>
+                                <span class="distribution-value">{{ count }} ({{ percentage }}%)</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
         </div>
         
         <div class="section findings">
