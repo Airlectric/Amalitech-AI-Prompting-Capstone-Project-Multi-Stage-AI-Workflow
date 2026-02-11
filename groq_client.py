@@ -42,13 +42,19 @@ RULES:
 - Handle errors gracefully
 - Close each figure after saving to avoid memory issues
 
-CRITICAL NULL HANDLING - USE EXACT SYNTAX:
-- ALWAYS handle null values BEFORE applying any string operations (like .split())
-- For numeric columns with nulls: use df.loc[:, 'column_name'] = df['column_name'].fillna(df['column_name'].median())
-- For categorical columns with nulls: use df.loc[:, 'column_name'] = df['column_name'].fillna("Unknown")
-- IMPORTANT: Use df.loc[:, 'col'] = df['col'].fillna(value) NOT df['col'].fillna(value, inplace=True)
-- Handle NaN values in string columns BEFORE calling .split() - check for NaN and replace with a default value first using the correct syntax above
-- Check for nulls using df.isnull().sum() and handle them explicitly
+CRITICAL DATA TYPE HANDLING - USE EXACT SYNTAX:
+1. For null handling: df.loc[:, 'column_name'] = df['column_name'].fillna(value)
+2. For converting categorical string columns to numeric:
+   - Create a mapping dictionary: mapping = {{'value1': 1, 'value2': 2}}
+   - Apply the mapping: df['column_name'] = df['column_name'].map(mapping)
+   - Convert to numeric: df['column_name'] = pd.to_numeric(df['column_name'], errors='coerce')
+   - Fill NaN: df['column_name'] = df['column_name'].fillna(df['column_name'].median())
+   - Convert to integer: df['column_name'] = df['column_name'].astype(int)
+3. For datetime conversion - USE DIRECT ASSIGNMENT, NOT loc:
+   - First convert to datetime: df['column_name'] = pd.to_datetime(df['column_name'], format='mixed', dayfirst=True)
+   - This automatically updates the column in place without needing loc
+4. For string operations like .split(), ALWAYS handle NaN first using fillna
+5. Always verify column types after conversion using df.dtypes
 
 DATA SCHEMA:
 {json.dumps(data_profile, indent=2)}
