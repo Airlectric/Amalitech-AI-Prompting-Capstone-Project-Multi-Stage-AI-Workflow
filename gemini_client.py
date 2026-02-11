@@ -6,10 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_COOLDOWN_SECONDS = 3
-
-LAST_API_CALL_TIME = 0
-
 def extract_json_from_response(response):
     text = response.text.strip()
     if text.startswith("```json"):
@@ -20,31 +16,17 @@ def extract_json_from_response(response):
         text = text[:-3]
     return text.strip()
 
-def rate_limit():
-    global LAST_API_CALL_TIME
-    elapsed = time.time() - LAST_API_CALL_TIME
-    if elapsed < API_COOLDOWN_SECONDS:
-        time.sleep(API_COOLDOWN_SECONDS - elapsed)
-    LAST_API_CALL_TIME = time.time()
-
-def analyze_data(profile_json, max_retries=3):
+def analyze_data_with_gemini(profile_json):
+    """Analyze data using Gemini API."""
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
 
-    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-    last_error = None
-    
-    for attempt in range(max_retries):
-        for model in models_to_try:
-            try:
-                rate_limit()
-                
-                client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
-                prompt = """You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
+    prompt = """You are a senior data analyst. I will give you a data profile (schema, statistics, sample rows) of a CSV dataset.
 
 Your job:
 1. Identify what this dataset represents (domain, purpose)
@@ -82,56 +64,86 @@ Return your response as ONLY valid JSON with this structure:
 Here is the data profile:
 """ + json.dumps(profile_json)
 
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt
-                )
-                json_text = extract_json_from_response(response)
-                return json.loads(json_text)
-                
-            except Exception as e:
-                error_str = str(e)
-                last_error = e
-                
-                if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
-                    wait_time = 60
-                    if "retry in" in error_str.lower():
-                        try:
-                            import re
-                            match = re.search(r'retry in ([\d.]+)s', error_str.lower())
-                            if match:
-                                wait_time = float(match.group(1)) + 5
-                        except:
-                            pass
-                    
-                    if attempt < max_retries - 1:
-                        time.sleep(wait_time)
-                        continue
-                break
-        
-        if attempt < max_retries - 1:
-            time.sleep(60)
-    
-    raise ValueError(f"Failed after {max_retries} retries. Last error: {str(last_error)}")
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    json_text = extract_json_from_response(response)
+    return json.loads(json_text)
 
-def narrate_results(analysis_results, max_retries=3):
+def analyze_data_with_groq(profile_json):
+    """Analyze data using Groq API as fallback."""
+    from groq import Groq
+    
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in .env file")
+
+    client = Groq(api_key=api_key)
+
+    prompt = f"""You are a senior data analyst. Analyze this dataset and generate an analysis plan.
+
+DATA PROFILE:
+{json.dumps(profile_json, indent=2)}
+
+Return ONLY valid JSON:
+{{
+  "dataset_description": "What this dataset represents",
+  "cleaning_steps": ["list of data cleaning operations needed"],
+  "analyses": [
+    {{
+      "question": "Analytical question to answer",
+      "columns": ["column1", "column2"],
+      "analysis_type": "distribution/comparison/correlation/trend",
+      "chart_type": "bar/scatter/histogram/box/heatmap/line",
+      "insight_hint": "What insight to look for"
+    }}
+  ]
+}}
+
+Make sure to handle null values and edge cases in cleaning_steps.
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": "You are a senior data analyst. Always return valid JSON only."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.2
+    )
+
+    text = response.choices[0].message.content.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    
+    return json.loads(text.strip())
+
+def analyze_data(profile_json):
+    """Analyze data with Gemini, fall back to Groq if quota exceeded."""
+    try:
+        return analyze_data_with_gemini(profile_json)
+    except Exception as e:
+        error_str = str(e)
+        if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
+            return analyze_data_with_groq(profile_json)
+        raise
+
+def narrate_results_with_gemini(analysis_results):
+    """Narrate results using Gemini API."""
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GOOGLE_GEMINI_API_KEY not found in .env file")
 
-    models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-    last_error = None
-    
-    for attempt in range(max_retries):
-        for model in models_to_try:
-            try:
-                rate_limit()
-                
-                client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
-                prompt = """You are a senior data analyst writing a report for stakeholders.
+    prompt = """You are a senior data analyst writing a report for stakeholders.
 
 I will give you the raw results of a data analysis (statistical findings, chart descriptions, detected patterns).
 
@@ -150,37 +162,66 @@ Return your response as ONLY valid JSON:
 Here are the analysis results:
 """ + json.dumps(analysis_results)
 
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt
-                )
-                json_text = extract_json_from_response(response)
-                return json.loads(json_text)
-                
-            except Exception as e:
-                error_str = str(e)
-                last_error = e
-                
-                if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
-                    wait_time = 60
-                    if "retry in" in error_str.lower():
-                        try:
-                            import re
-                            match = re.search(r'retry in ([\d.]+)s', error_str.lower())
-                            if match:
-                                wait_time = float(match.group(1)) + 5
-                        except:
-                            pass
-                    
-                    if attempt < max_retries - 1:
-                        time.sleep(wait_time)
-                        continue
-                break
-        
-        if attempt < max_retries - 1:
-            time.sleep(60)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    json_text = extract_json_from_response(response)
+    return json.loads(json_text)
+
+def narrate_results_with_groq(analysis_results):
+    """Narrate results using Groq API as fallback."""
+    from groq import Groq
     
-    raise ValueError(f"Failed after {max_retries} retries. Last error: {str(last_error)}")
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in .env file")
+
+    client = Groq(api_key=api_key)
+
+    prompt = f"""You are a senior data analyst. Write a report based on these analysis results.
+
+ANALYSIS RESULTS:
+{json.dumps(analysis_results, indent=2)}
+
+Return ONLY valid JSON:
+{{
+  "executive_summary": "3-4 sentence summary of key findings",
+  "key_findings": ["finding 1", "finding 2", "finding 3"],
+  "recommendations": ["recommendation 1", "recommendation 2"]
+}}
+
+Be concise and actionable.
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": "You are a senior data analyst. Always return valid JSON only."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.2
+    )
+
+    text = response.choices[0].message.content.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    
+    return json.loads(text.strip())
+
+def narrate_results(analysis_results):
+    """Narrate results with Gemini, fall back to Groq if quota exceeded."""
+    try:
+        return narrate_results_with_gemini(analysis_results)
+    except Exception as e:
+        error_str = str(e)
+        if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str:
+            return narrate_results_with_groq(analysis_results)
+        raise
 
 if __name__ == "__main__":
     import sys
