@@ -90,13 +90,6 @@ Update executor.py to increase subprocess timeout from 60 seconds to 120 seconds
 
 ---
 
-## Dataset Addition Prompts
-
-### Prompt 11: Add New Dataset
-Add Flight_Price_Dataset_of_Bangladesh.csv to the sample_data/ directory. This dataset contains 10,683 rows with 11 columns including airline, journey date, source/destination, route, duration, stops, and price information.
-
----
-
 ## Testing and Integration Prompts
 
 ### Prompt 12: Test on Employees Dataset
@@ -111,12 +104,18 @@ Run the pipeline with sample_data/Flight_Price_Dataset_of_Bangladesh.csv and ver
 - AI-generated code executes without errors
 - Report generates successfully with 64 charts
 
----
 
-## Version Control Prompts
 
-### Prompt 14: Commit Enhanced Profiling
-Create a feature branch called "enhanced-profiling" from dev branch, commit the enhanced profiling changes (profiler.py, report_template.html, compiler.py), merge to dev, then merge to master and push to remote.
+### Including frontend to streamline the process
+A frontend must be created in streamlit to allow users to upload the .csv,.xlsx, .paquet data and other valid data formats
+- first there should be dataset validation for both .csv and .xlsx and the other data formats
+- next after processing is done the report should be displayed and the user should be allowed to download the report
+- for downloading the report the format should be converted to .pdf or .md depending on the users choice
 
-### Prompt 15: Commit Improved Null Handling
-Create a feature branch called "improved-null-handling" from dev branch, commit the null handling improvements (gemini_client.py, groq_client.py, pipeline.py, executor.py) and the new flight dataset, merge to dev, then merge to master and push to remote.
+### Deployment on streamlit server
+The Application will be deployed on the streamlit server, hence:
+- Prepare the system for deployment
+- 
+
+
+

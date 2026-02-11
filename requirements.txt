@@ -5,3 +5,8 @@ google-genai
 groq
 jinja2
 python-dotenv
+streamlit
+openpyxl
+pyarrow
+html2text
+weasyprint
