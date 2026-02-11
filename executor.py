@@ -16,7 +16,7 @@ def ensure_directories():
 def run_analysis(code_string, csv_path):
     ensure_directories()
     
-    with open(ANALYSIS_SCRIPT, "w") as f:
+    with open(ANALYSIS_SCRIPT, "w", encoding="utf-8") as f:
         f.write(code_string)
     
     result = {
