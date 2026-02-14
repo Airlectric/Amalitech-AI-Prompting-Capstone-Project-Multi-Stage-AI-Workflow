@@ -1,12 +1,11 @@
 import json
 import os
-from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-def extract_code_from_response(response):
-    text = response.choices[0].message.content.strip()
+def extract_code_from_text(text):
+    text = text.strip()
     if text.startswith("```python"):
         text = text[9:]
     elif text.startswith("```"):
@@ -24,23 +23,18 @@ def post_process_code(code):
         processed_lines.append(line)
     return '\n'.join(processed_lines)
 
-def generate_code(data_profile, analysis_plan):
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        raise ValueError("GROQ_API_KEY not found in .env file")
-    
-    client = Groq(api_key=api_key)
-    
-    prompt = f"""You are an expert Python data analyst. Generate a COMPLETE, RUNNABLE Python script that performs the following analysis on a CSV file.
+def _build_prompt(data_profile, analysis_plan):
+    return f"""You are an expert Python data analyst. Generate a COMPLETE, RUNNABLE Python script that performs the following analysis on a CSV file.
 
 RULES:
 - The CSV file path will be passed as the first command-line argument (sys.argv[1])
-- Use only: pandas, matplotlib, seaborn, sys, os
+- Use only: pandas, matplotlib, seaborn, sys, os, re
 - Save each chart as a PNG file in an "output/charts/" directory (create it if it doesn't exist)
+- IMPORTANT: Name chart files using simple numbered names ONLY, like "chart_1.png", "chart_2.png", etc. Do NOT use question text, special characters, or spaces in filenames. Example: plt.savefig("output/charts/chart_1.png")
 - Print a JSON object to stdout with the key results of each analysis
 - Do NOT use plt.show() — only plt.savefig()
-- Handle errors gracefully
-- Close each figure after saving to avoid memory issues
+- CRITICAL ERROR HANDLING: Wrap EACH individual analysis in its own try/except block so that if one analysis fails, the script continues to the next. Print any errors to stderr but do NOT re-raise them. The script must always reach the end and print the JSON results to stdout.
+- Close each figure after saving with plt.close() to avoid memory issues
 
 CRITICAL DATA TYPE HANDLING - USE EXACT SYNTAX:
 1. For null handling: df.loc[:, 'column_name'] = df['column_name'].fillna(value)
@@ -90,7 +84,18 @@ ANALYSIS PLAN:
 
 Return ONLY the Python code, no markdown fences, no explanation.
 """
-    
+
+def generate_code_with_groq(data_profile, analysis_plan):
+    """Generate code using Groq API."""
+    from groq import Groq
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in .env file")
+
+    client = Groq(api_key=api_key)
+    prompt = _build_prompt(data_profile, analysis_plan)
+
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
@@ -99,10 +104,63 @@ Return ONLY the Python code, no markdown fences, no explanation.
         ],
         temperature=0.2
     )
-    
-    code = extract_code_from_response(response)
-    code = post_process_code(code)
-    return code
+
+    return extract_code_from_text(response.choices[0].message.content)
+
+def generate_code_with_cerebras(data_profile, analysis_plan):
+    """Generate code using Cerebras API as fallback."""
+    try:
+        from cerebras.cloud.sdk import Cerebras
+    except ImportError:
+        raise ValueError("cerebras-cloud-sdk not found. Make sure you're using the venv Python: 'venv\\Scripts\\python.exe -m streamlit run app.py'")
+
+    api_key = os.getenv("CEREBRAS_API_KEY")
+    if not api_key:
+        raise ValueError("CEREBRAS_API_KEY not found in .env file")
+
+    client = Cerebras(api_key=api_key)
+    prompt = _build_prompt(data_profile, analysis_plan)
+
+    response = client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": "You are an expert Python data analyst."},
+            {"role": "user", "content": prompt}
+        ],
+        model="llama-3.3-70b",
+        max_completion_tokens=8192,
+        temperature=0.2
+    )
+
+    return extract_code_from_text(response.choices[0].message.content)
+
+
+def generate_code(data_profile, analysis_plan):
+    """Generate code with Groq, fall back to Cerebras."""
+    apis = [
+        ("Groq", generate_code_with_groq),
+        ("Cerebras", generate_code_with_cerebras)
+    ]
+
+    last_error = None
+    for api_name, api_func in apis:
+        try:
+            code = api_func(data_profile, analysis_plan)
+            return post_process_code(code)
+        except ImportError as e:
+            last_error = e
+            continue
+        except Exception as e:
+            error_str = str(e)
+            last_error = e
+
+            if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str or "quota" in error_str.lower() or "rate_limit" in error_str.lower():
+                continue
+            elif "not found" in error_str.lower() or "invalid" in error_str.lower() or "authentication" in error_str.lower():
+                continue
+            else:
+                raise
+
+    raise ValueError(f"All APIs failed. Last error: {str(last_error)}")
 
 if __name__ == "__main__":
     import sys

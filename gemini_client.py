@@ -78,7 +78,7 @@ Here is the data profile:
 def analyze_data_with_groq(profile_json):
     """Analyze data using Groq API as fallback."""
     from groq import Groq
-    
+
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY not found in .env file")
@@ -124,7 +124,7 @@ Make sure to handle null values and edge cases in cleaning_steps.
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return json.loads(text.strip())
 
 def analyze_data_with_cerebras(profile_json):
@@ -133,7 +133,7 @@ def analyze_data_with_cerebras(profile_json):
         from cerebras.cloud.sdk import Cerebras
     except ImportError:
         raise ValueError("cerebras-cloud-sdk not found. Make sure you're using the venv Python: 'venv\\Scripts\\python.exe -m streamlit run app.py'")
-    
+
     api_key = os.getenv("CEREBRAS_API_KEY")
     if not api_key:
         raise ValueError("CEREBRAS_API_KEY not found in .env file")
@@ -180,7 +180,7 @@ Make sure to handle null values and edge cases in cleaning_steps.
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return json.loads(text.strip())
 
 def analyze_data_with_openrouter(profile_json):
@@ -221,13 +221,13 @@ Make sure to handle null values and edge cases in cleaning_steps. Always return 
             "X-Title": "AI Data Analysis Pipeline"
         },
         json={
-            "model": "anthropic/claude-3-haiku",
+            "model": "google/gemini-2.0-flash-exp:free",
             "messages": [
                 {"role": "system", "content": "You are a senior data analyst. Always return valid JSON only."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.2,
-            "max_tokens": 1024
+            "max_tokens": 4096
         },
         timeout=60
     )
@@ -243,18 +243,16 @@ Make sure to handle null values and edge cases in cleaning_steps. Always return 
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return json.loads(text.strip())
 
 def analyze_data(profile_json):
-    """Analyze data with Gemini, fall back to Groq -> Cerebras -> OpenRouter."""
+    """Analyze data with Gemini, fall back to OpenRouter."""
     apis = [
         ("Gemini", analyze_data_with_gemini),
-        ("Groq", analyze_data_with_groq),
-        ("Cerebras", analyze_data_with_cerebras),
         ("OpenRouter", analyze_data_with_openrouter)
     ]
-    
+
     last_error = None
     for api_name, api_func in apis:
         try:
@@ -265,14 +263,14 @@ def analyze_data(profile_json):
         except Exception as e:
             error_str = str(e)
             last_error = e
-            
+
             if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str or "quota" in error_str.lower() or "rate_limit" in error_str.lower():
                 continue
             elif "not found" in error_str.lower() or "invalid" in error_str.lower() or "authentication" in error_str.lower():
                 continue
             else:
                 raise
-    
+
     raise ValueError(f"All APIs failed. Last error: {str(last_error)}")
 
 def narrate_results_with_gemini(analysis_results):
@@ -314,7 +312,7 @@ Here are the analysis results:
 def narrate_results_with_groq(analysis_results):
     """Narrate results using Groq API as fallback."""
     from groq import Groq
-    
+
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY not found in .env file")
@@ -352,7 +350,7 @@ Be concise and actionable.
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return json.loads(text.strip())
 
 def narrate_results_with_cerebras(analysis_results):
@@ -361,7 +359,7 @@ def narrate_results_with_cerebras(analysis_results):
         from cerebras.cloud.sdk import Cerebras
     except ImportError:
         raise ValueError("cerebras-cloud-sdk not found. Make sure you're using the venv Python: 'venv\\Scripts\\python.exe -m streamlit run app.py'")
-    
+
     api_key = os.getenv("CEREBRAS_API_KEY")
     if not api_key:
         raise ValueError("CEREBRAS_API_KEY not found in .env file")
@@ -400,7 +398,7 @@ Be concise and actionable.
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return json.loads(text.strip())
 
 def narrate_results_with_openrouter(analysis_results):
@@ -433,7 +431,7 @@ Be concise and actionable. Always return valid JSON only.
             "X-Title": "AI Data Analysis Pipeline"
         },
         json={
-            "model": "anthropic/claude-3-haiku",
+            "model": "google/gemini-2.0-flash-exp:free",
             "messages": [
                 {"role": "system", "content": "You are a senior data analyst. Always return valid JSON only."},
                 {"role": "user", "content": prompt}
@@ -455,18 +453,16 @@ Be concise and actionable. Always return valid JSON only.
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return json.loads(text.strip())
 
 def narrate_results(analysis_results):
     """Narrate results with Gemini, fall back to Groq -> Cerebras -> OpenRouter."""
     apis = [
         ("Gemini", narrate_results_with_gemini),
-        ("Groq", narrate_results_with_groq),
-        ("Cerebras", narrate_results_with_cerebras),
         ("OpenRouter", narrate_results_with_openrouter)
     ]
-    
+
     last_error = None
     for api_name, api_func in apis:
         try:
@@ -477,14 +473,14 @@ def narrate_results(analysis_results):
         except Exception as e:
             error_str = str(e)
             last_error = e
-            
+
             if "RESOURCE_EXHAUSTED" in error_str or "429" in error_str or "quota" in error_str.lower() or "rate_limit" in error_str.lower():
                 continue
             elif "not found" in error_str.lower() or "invalid" in error_str.lower() or "authentication" in error_str.lower():
                 continue
             else:
                 raise
-    
+
     raise ValueError(f"All APIs failed. Last error: {str(last_error)}")
 
 if __name__ == "__main__":

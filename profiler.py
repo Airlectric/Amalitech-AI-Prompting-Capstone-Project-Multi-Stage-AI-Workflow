@@ -158,11 +158,11 @@ def get_categorical_stats(series):
     null_count = int(series.isna().sum())
     null_percentage = round((null_count / len(series)) * 100, 2) if len(series) > 0 else 0.0
     
-    unique_values = [str(v) for v in clean_series.unique()[:20]]
+    unique_values = [str(v) for v in clean_series.unique()[:10]]
     unique_count = len(clean_series.unique())
-    
+
     vc = clean_series.value_counts()
-    value_counts = {str(k): int(v) for k, v in vc.head(10).items()}
+    value_counts = {str(k): int(v) for k, v in vc.head(5).items()}
     
     mode_val = str(vc.index[0]) if len(vc) > 0 else None
     mode_frequency = int(vc.iloc[0]) if len(vc) > 0 else 0
@@ -180,31 +180,44 @@ def get_categorical_stats(series):
         "mode_percentage": mode_percentage
     }
 
+MAX_PROFILE_ROWS = 2000
+
 def profile_csv(csv_path):
     if not Path(csv_path).exists():
         raise FileNotFoundError(f"File not found: {csv_path}")
-    
-    df = pd.read_csv(csv_path)
-    
+
+    df_full = pd.read_csv(csv_path)
+    total_rows = len(df_full)
+    total_nulls = int(df_full.isna().sum().sum())
+
+    # Sample a representative subset for profiling — the AI only needs
+    # approximate statistics to plan the analysis, not exact figures from
+    # every row.  The generated code still runs against the full dataset.
+    if total_rows > MAX_PROFILE_ROWS:
+        df = df_full.sample(n=MAX_PROFILE_ROWS, random_state=42)
+    else:
+        df = df_full
+
     profile = {
         "filename": Path(csv_path).name,
-        "row_count": len(df),
+        "row_count": total_rows,
         "column_count": len(df.columns),
-        "total_null_values": int(df.isna().sum().sum()),
+        "profiled_rows": len(df),
+        "total_null_values": total_nulls,
         "columns": [],
-        "sample_rows": convert_to_native(df.head(5).to_dict(orient="records"))
+        "sample_rows": convert_to_native(df_full.head(3).to_dict(orient="records"))
     }
-    
+
     for col in df.columns:
         series = df[col]
         category = identify_category(series)
-        
+
         col_info = {
             "name": col,
             "dtype": str(series.dtype),
             "category": category
         }
-        
+
         if category == "numeric":
             col_info["stats"] = get_numeric_stats(series)
         elif category == "categorical":
@@ -215,9 +228,9 @@ def profile_csv(csv_path):
                 "null_count": int(series.isna().sum()),
                 "null_percentage": round((series.isna().sum() / len(series)) * 100, 2) if len(series) > 0 else 0.0
             }
-        
+
         profile["columns"].append(col_info)
-    
+
     return profile
 
 if __name__ == "__main__":

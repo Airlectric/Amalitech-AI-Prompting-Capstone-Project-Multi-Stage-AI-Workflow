@@ -119,12 +119,12 @@ Create a Streamlit frontend (app.py) with:
 
 ### Prompt 15: Add Enhanced Streamlit Features
 Enhance the Streamlit app with:
-1. **Auto Cleanup**: Clear generated files after 30 minutes of inactivity using a background thread
-2. **Sample Datasets**: Add sidebar option to test with existing datasets (employees.csv, Flight_Price_Dataset_of_Bangladesh.csv)
-3. **Complete Package Download**: Add option to download report + all visualizations as a ZIP file containing:
+1. Auto Cleanup: Clear generated files after 30 minutes of inactivity using a background thread
+2.Sample Datasets: Add sidebar option to test with existing datasets (employees.csv, Flight_Price_Dataset_of_Bangladesh.csv)
+3.Complete Package Download: Add option to download report + all visualizations as a ZIP file containing:
    - HTML report
    - All generated PNG charts in a charts/ subfolder
-4. **Manual Cleanup Button**: Add "Done - Clear Generated Files" button after analysis completion
+4.Manual Cleanup Button: Add "Done - Clear Generated Files" button after analysis completion
 
 Implementation details:
 - Use threading.Timer or background thread for 30-min cleanup
@@ -144,12 +144,12 @@ Update docs/prompt-logs.md to include all new prompts for enhanced Streamlit fea
 ### Prompt 17: Handle Gemini API Rate Limiting
 The Gemini API free tier has a limit of 20 requests per minute. Implement fixes:
 
-1. **Add Rate Limiting**: 
+1.Add Rate Limiting: 
    - Add global LAST_API_CALL_TIME tracker
    - Implement rate_limit() function with 3-second cooldown between API calls
    - Use time.sleep() to enforce minimum delay between requests
 
-2. **Add Retry Logic with Exponential Backoff**:
+2.Add Retry Logic with Exponential Backoff:
    - Create max_retries parameter (default 3 retries)
    - Implement fallback to different models when quota exceeded:
      - Primary: gemini-2.5-flash
@@ -159,11 +159,11 @@ The Gemini API free tier has a limit of 20 requests per minute. Implement fixes:
    - Add 5-second buffer to recommended wait time
    - Try each model sequentially before retrying
 
-3. **Update Function Signatures**:
+3.Update Function Signatures:
    - analyze_data(profile_json, max_retries=3)
    - narrate_results(analysis_results, max_retries=3)
 
-4. **Error Handling**:
+4.Error Handling:
    - Catch RESOURCE_EXHAUSTED (429) errors
    - Parse error message for retry delay
    - Raise ValueError with clear message after all retries exhausted

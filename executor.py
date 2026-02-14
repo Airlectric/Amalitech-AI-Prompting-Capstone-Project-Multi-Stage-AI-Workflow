@@ -15,7 +15,14 @@ def ensure_directories():
 
 def run_analysis(code_string, csv_path):
     ensure_directories()
-    
+
+    # Clear old charts so stale results from a previous run don't bleed in
+    for old_chart in CHARTS_DIR.glob("*.png"):
+        try:
+            old_chart.unlink()
+        except OSError:
+            pass
+
     with open(ANALYSIS_SCRIPT, "w", encoding="utf-8") as f:
         f.write(code_string)
     
@@ -46,15 +53,21 @@ def run_analysis(code_string, csv_path):
                 result["results"] = {"raw_output": process.stdout.strip()}
         else:
             result["errors"] = process.stderr.strip() or f"Exit code: {process.returncode}"
-    
+
     except subprocess.TimeoutExpired:
-        result["errors"] = "Execution timed out after 60 seconds"
+        result["errors"] = "Execution timed out after 120 seconds"
     except Exception as e:
         result["errors"] = str(e)
-    
+
     chart_paths = list(CHARTS_DIR.glob("*.png"))
     result["chart_paths"] = [str(p) for p in chart_paths]
-    
+
+    # Partial success: if the script crashed but still produced charts, continue
+    if not result["success"] and len(chart_paths) > 0:
+        result["success"] = True
+        if result["results"] is None:
+            result["results"] = {"note": "Partial execution — some analyses completed before an error occurred."}
+
     return result
 
 if __name__ == "__main__":
