@@ -221,7 +221,7 @@ Make sure to handle null values and edge cases in cleaning_steps. Always return 
             "X-Title": "AI Data Analysis Pipeline"
         },
         json={
-            "model": "google/gemini-2.0-flash-exp:free",
+            "model": "deepseek/deepseek-chat-v3-0324:free",
             "messages": [
                 {"role": "system", "content": "You are a senior data analyst. Always return valid JSON only."},
                 {"role": "user", "content": prompt}
@@ -431,7 +431,7 @@ Be concise and actionable. Always return valid JSON only.
             "X-Title": "AI Data Analysis Pipeline"
         },
         json={
-            "model": "google/gemini-2.0-flash-exp:free",
+            "model": "deepseek/deepseek-chat-v3-0324:free",
             "messages": [
                 {"role": "system", "content": "You are a senior data analyst. Always return valid JSON only."},
                 {"role": "user", "content": prompt}

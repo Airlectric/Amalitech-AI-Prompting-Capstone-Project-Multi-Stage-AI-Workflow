@@ -1,211 +1,157 @@
 # Automated Intelligent Data Analysis Pipeline
 
-## Overview
+## What This Does
 
-A single-command Python pipeline that automatically analyzes any CSV dataset and generates a complete, professional HTML report with charts, insights, and recommendations in under 60 seconds.
+Give it a dataset, and it hands you back a full analysis report — charts, insights, and recommendations — without you writing a single line of analysis code. The whole process takes under 60 seconds.
 
-**Problem Solved:** Manual data analysis takes 2-4 hours per dataset. This pipeline reduces it to ~45 seconds with zero human intervention after initial CSV selection.
+It works in two ways:
+- **Terminal**: Run one command and get your report.
+- **Web App**: Upload your file through a browser interface (Streamlit) and view/download results interactively.
 
-## Features
+## How It Works
 
-- **Fully Automated**: One command processes everything from raw CSV to final HTML report
-- **AI-Powered**: Chains two different AI APIs (Gemini + Groq) for optimal results
-- **Professional Reports**: Generates self-contained HTML reports with embedded charts
-- **Multiple Visualizations**: Automatically creates appropriate charts for each analysis
-- **Executive Summary**: AI-generated narrative with key findings and recommendations
-- **Error Handling**: Saves partial results at each stage for debugging
-- **Rate Limiting**: Built-in delays between API calls to avoid rate limits
+The system runs your data through a 6-step pipeline. Each step feeds into the next:
+
+```
+Your CSV file
+     |
+     v
+[Step 0] Profile the data
+         Scans a sample of your dataset (up to 2,000 rows) to understand
+         its shape — column names, types, value ranges, missing data, etc.
+         The full dataset is still used later for the actual analysis.
+     |
+     v
+[Step 1] AI plans the analysis  (Gemini API)
+         The data profile is sent to Google's Gemini model. It figures out
+         what the dataset is about and picks 4-5 interesting questions to
+         answer — for example "How does salary vary by department?" — along
+         with the right chart type for each one.
+     |
+     v
+[Step 2] AI writes the analysis code  (Groq API)
+         A second AI (Llama model via Groq) receives the profile and the
+         analysis plan, then generates a complete Python script that will
+         crunch the numbers and draw the charts.
+     |
+     v
+[Step 3] Run the generated code
+         The system executes the AI-written script in an isolated process.
+         It reads your full dataset, performs the analyses, and saves
+         charts as PNG images. If one analysis fails, the rest still run.
+     |
+     v
+[Step 4] AI writes the narrative  (Gemini API)
+         The raw results go back to Gemini, which writes a plain-English
+         executive summary, highlights key findings, and suggests next steps.
+     |
+     v
+[Step 5] Build the final report
+         Everything is assembled into a single self-contained HTML file —
+         narrative text, embedded charts, and metadata — using a template.
+         Open it in any browser, no server needed.
+```
+
+## Fallback APIs
+
+If the primary API hits a rate limit or goes down, the system automatically tries a backup:
+
+| Step | Primary API | Fallback |
+|------|-------------|----------|
+| Analysis planning (Step 1) | Gemini | OpenRouter (DeepSeek V3) |
+| Code generation (Step 2) | Groq (Llama) | Cerebras (Llama) |
+| Report narration (Step 4) | Gemini | OpenRouter (DeepSeek V3) |
+
+You only need API keys for the services you want to use. At minimum, a Gemini key and a Groq key will get you running.
 
 ## Quick Start
 
+### 1. Install dependencies
+
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Copy environment template
-cp .env.example .env
-
-# 3. Add your API keys to .env
-#    - GEMINI_API_KEY from https://aistudio.google.com
-#    - GROQ_API_KEY from https://console.groq.com
-
-# 4. Run the pipeline
-python pipeline.py sample_data/employees.csv
-
-# 5. Report opens automatically at output/report.html
 ```
+
+### 2. Set up API keys
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and add your keys:
+
+| Key | Where to get it (free) |
+|-----|------------------------|
+| `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com) |
+| `GROQ_API_KEY` | [Groq Console](https://console.groq.com) |
+| `CEREBRAS_API_KEY` *(optional)* | [Cerebras](https://cloud.cerebras.ai) |
+| `OPENROUTER_API_KEY` *(optional)* | [OpenRouter](https://openrouter.ai) |
+
+### 3. Run it
+
+**Terminal mode:**
+
+```bash
+python pipeline.py sample_data/employees.csv
+```
+
+The report appears at `output/report.html` and opens in your browser.
+
+**Web app mode:**
+
+```bash
+streamlit run app.py
+```
+
+Opens at `http://localhost:8501`. Upload a file or pick a sample dataset from the sidebar, then click "Run Analysis Pipeline".
+
+## Supported File Formats
+
+The web app accepts CSV, Excel (.xlsx), Parquet, and JSON. Non-CSV formats are automatically converted to CSV before processing.
 
 ## Project Structure
 
 ```
-project/
-├── pipeline.py              # Main orchestrator (6-stage pipeline)
-├── profiler.py              # Stage 0: Data profiling
-├── gemini_client.py         # Stage 1 & 4: Gemini API integration
-├── groq_client.py           # Stage 2: Groq API integration
-├── executor.py              # Stage 3: Code execution
-├── compiler.py              # Stage 5: HTML report compilation
-├── report_template.html     # Professional Jinja2 HTML template
-├── generate_sample_data.py  # Synthetic employee data generator
-├── requirements.txt         # Python dependencies
-├── .env.example            # Environment variables template
-├── sample_data/            # Sample datasets
-│   └── employees.csv       # 1000 employee records
-├── output/                 # Generated output files
-│   ├── charts/             # PNG visualization files
-│   └── report.html         # Final HTML report
-└── docs/                   # Documentation
-    ├── workflow-diagram.md  # Pipeline architecture diagram
-    └── documentation.md     # Full documentation
+pipeline.py              Main CLI entry point — runs the 6-step pipeline
+app.py                   Streamlit web interface
+profiler.py              Step 0: Scans and profiles the dataset
+gemini_client.py         Steps 1 & 4: Gemini API calls (+ OpenRouter fallback)
+groq_client.py           Step 2: Groq API call (+ Cerebras fallback)
+executor.py              Step 3: Runs the AI-generated script safely
+compiler.py              Step 5: Assembles the HTML report
+report_template.html     HTML/CSS template for the final report
+requirements.txt         Python packages needed
+.env.example             Template for API keys
+sample_data/             Sample datasets to test with
+output/                  Where reports, charts, and intermediate files land
+docs/                    Additional documentation
 ```
 
-## Pipeline Architecture
+## What Gets Sent to the AI
 
-### Stage 0: Data Profiling (Python)
-- Reads CSV file with pandas
-- Extracts schema, statistics, sample rows
-- Identifies column types (numeric, categorical, datetime)
-- **Output**: JSON data profile
+The AI never sees your raw data. The profiler creates a summary that includes:
 
-### Stage 1: AI Analysis Planning (Gemini API)
-- Receives data profile
-- Identifies dataset domain and purpose
-- Generates 4-5 analytical questions
-- Specifies chart types and analysis methods
-- **Output**: JSON analysis plan
+- Column names, data types, and basic statistics (mean, median, min/max, etc.)
+- 3 sample rows so the AI understands the format
+- For large datasets (over 2,000 rows), statistics are computed on a random sample
 
-### Stage 2: AI Code Generation (Groq API)
-- Receives data schema and analysis plan
-- Generates complete, runnable Python script
-- Creates visualizations using pandas/matplotlib/seaborn
-- **Output**: Python analysis script
+The generated analysis code runs locally on your machine against the full dataset.
 
-### Stage 3: Code Execution (Python)
-- Executes generated script via subprocess
-- 60-second timeout protection
-- Captures stdout and collects PNG charts
-- **Output**: Charts + JSON results
+## Troubleshooting
 
-### Stage 4: AI Report Narration (Gemini API)
-- Receives analysis results and chart descriptions
-- Writes executive summary
-- Generates key findings and recommendations
-- **Output**: JSON narrative
+**Rate limit errors** — The pipeline waits between API calls, but if you hit limits, wait a minute and retry. The fallback APIs will also kick in automatically.
 
-### Stage 5: Report Compilation (Python)
-- Loads Jinja2 HTML template
-- Embeds charts as base64 images
-- Injects narrative and metadata
-- **Output**: Self-contained HTML report
+**Module not found** — Run `pip install -r requirements.txt` (use the venv if you have one).
 
-## Tools Used
+**Analysis script fails** — The AI-generated code isn't perfect every time. The system is built to handle this: if some analyses fail, the ones that succeeded still make it into the report. Re-running often produces different (working) code.
 
-| Tool | Provider | Role | Model |
-|------|----------|------|-------|
-| Gemini API | Google | Analysis planning & narration | gemini-2.5-flash |
-| Groq API | Groq | Python code generation | llama-3.3-70b-versatile |
-| Pandas | - | Data processing | - |
-| Matplotlib | - | Visualization | - |
-| Seaborn | - | Statistical graphics | - |
-| Jinja2 | - | HTML templating | - |
-| Google GenAI SDK | Google | API client | - |
-| Groq SDK | Groq | API client | - |
-
-## API Keys Required
-
-### Gemini API Key (Free Tier)
-1. Go to [Google AI Studio](https://aistudio.google.com)
-2. Sign in with Google account
-3. Click "Get API Key"
-4. Copy key to `.env` as `GEMINI_API_KEY`
-
-### Groq API Key (Free Tier)
-1. Go to [Groq Console](https://console.groq.com)
-2. Sign up with GitHub/Google
-3. Click "Create API Key"
-4. Copy key to `.env` as `GROQ_API_KEY`
-
-## Sample Data
-
-The project includes a synthetic employee dataset with 1000 records:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| employee_id | categorical | Unique EMP##### format |
-| name | categorical | Employee full name |
-| age | numeric | 22-60 years |
-| gender | categorical | Male/Female/Non-binary |
-| department | categorical | Sales/Engineering/HR/Marketing/Finance |
-| job_role | categorical | Role specific to department |
-| salary | numeric | Role-based with variation |
-| years_at_company | numeric | 0-25 years |
-| satisfaction_score | numeric | 1.0-5.0 scale |
-| overtime_hours | numeric | 0-40 hours/week |
-| performance_rating | numeric | 1-5 scale |
-| attrition | categorical | Yes/No |
-
-## Error Handling
-
-The pipeline saves partial results at each stage for debugging:
-
-```
-output/
-├── stage0_profile.json        # Data profile
-├── stage1_analysis_plan.json  # Analysis plan
-├── stage2_analysis_script.py # Generated code
-├── stage3_results.json        # Execution results
-├── stage3_error.json         # Error details (if failed)
-├── stage4_narrative.json     # Final narrative
-├── charts/                   # Generated visualizations
-└── report.html              # Final report
-```
-
-## Documentation
-
-- **[Workflow Diagram](docs/workflow-diagram.md)**: Visual flowchart of the 6-stage pipeline
-- **[Full Documentation](docs/documentation.md)**: Detailed explanation of all stages, prompts, and architecture
+**Partial results** — Each step saves its output to `output/` (e.g. `stage0_profile.json`, `stage1_analysis_plan.json`), so you can inspect where things went wrong.
 
 ## Requirements
 
-```
-pandas>=1.5.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-google-genai>=1.0.0
-groq>=0.4.0
-jinja2>=3.1.0
-python-dotenv>=1.0.0
-```
+- Python 3.8+
+- At minimum: a Gemini API key and a Groq API key (both free tier)
 
 ## License
 
 MIT License
-
-## Performance
-
-| Metric | Before | After |
-|--------|--------|-------|
-| Analysis Time | 2-4 hours | ~45 seconds |
-| Human Effort | Full engagement | Single command |
-| Report Quality | Varies by analyst | Consistent, professional |
-| Visualizations | Manual selection | Auto-generated |
-
-## Troubleshooting
-
-### Rate Limit Errors
-- The pipeline includes 2-second delays between API calls
-- If rate limits persist, wait 1-2 minutes and retry
-- gemini-2.5-flash has higher free tier limits
-
-### Module Not Found Errors
-```bash
-pip install -r requirements.txt
-```
-
-### Execution Timeout
-- Default timeout is 60 seconds per stage
-- Modify in `executor.py` if needed
-
-### Empty Charts
-- Check `output/stage3_error.json` for execution errors
-- Verify CSV file has valid data
