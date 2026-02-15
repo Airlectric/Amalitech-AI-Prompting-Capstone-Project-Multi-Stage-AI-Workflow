@@ -141,7 +141,7 @@ The generated analysis code runs locally on your machine against the full datase
 
 **Rate limit errors** — The pipeline waits between API calls, but if you hit limits, wait a minute and retry. The fallback APIs will also kick in automatically.
 
-**Module not found** — Run `pip install -r requirements.txt` (use the venv if you have one).
+**Module not found** — Run `pip install -r requirements.txt`.
 
 **Analysis script fails** — The AI-generated code isn't perfect every time. The system is built to handle this: if some analyses fail, the ones that succeeded still make it into the report. Re-running often produces different (working) code.
 
